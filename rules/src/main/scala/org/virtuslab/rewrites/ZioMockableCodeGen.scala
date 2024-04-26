@@ -131,7 +131,10 @@ class ZIOMockableCodeGen extends SemanticRule("ZIOMockableCodeGen") with ZIOCode
               }
             case _ => false
           }
-      def fromType = param.tpe.collect { case Type.Name("EnvironmentTag") => true }.nonEmpty
+      def fromType = param.tpe.collect {
+        case Type.Name("EnvironmentTag")                                                                                      => true
+        case Type.Select(Term.Select(Term.Name("zio"), _), Type.Name(name)) if name.startsWith("Tag") || name.endsWith("Tag") => true
+      }.nonEmpty
 
       fromSymbol || fromType
     }
