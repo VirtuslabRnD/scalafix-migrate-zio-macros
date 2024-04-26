@@ -174,26 +174,31 @@ trait ZIOCodeGen { self: SemanticRule =>
 
   def cleanupRules(pkgSymbols: Seq[Symbol], topLevelImportedSymbol: Seq[ImportedSymbol])(implicit
       doc: SemanticDocument
-  ): List[String => String] =
+  ): List[String => String] = {
+    val allPkgSymbols = List(Symbol("scala/"), Symbol("java/lang/")) ++ pkgSymbols
+
     List[String => String](
       _.replaceAll(",(\\w)", ", $1"),
       _.replace(".`package`", ""),
       _.replace("scala.Predef.", ""),
-      _.replaceAll(raw"scala\.(\w+)$$", "$1"),
-      _.replaceAll(raw"scala\.(\w+)([\[\]\)\,])", "$1$2"),
-      _.replace("java.lang.", ""),
       _.replace("zio.VersionSpecific.", "zio.")
-    ) ++ (pkgSymbols.map(ImportedSymbol.Wildcard(_)) ++ topLevelImportedSymbol)
+    ) ++ (allPkgSymbols.map(ImportedSymbol.Wildcard(_)) ++ topLevelImportedSymbol)
       .sortBy(_.symbol.value)
       .reverse
       .map { importedSymbol =>
         val symbol = importedSymbol.symbol
         val fqcn = types.termName(symbol).syntax
         importedSymbol match {
-          case _: ImportedSymbol.Wildcard => (s: String) => s.replace(s"$fqcn.", "")
-          case _: ImportedSymbol.Name     => (s: String) => s.replace(s"$fqcn.", symbol.displayName)
+          case _: ImportedSymbol.Wildcard =>
+            (s: String) => s.replace(s"$fqcn.", "")
+          case _: ImportedSymbol.Name =>
+            (s: String) =>
+              s
+                .replaceAll(raw"${fqcn}$$", symbol.displayName)
+                .replaceAll(raw"${fqcn}([\[\]\)\,\.])", s"${symbol.displayName}$$1")
         }
       }
+  }
 
   def cleanupSyntax(pkgSymbols: Seq[Symbol], topLevelImportedSymbol: Seq[ImportedSymbol])(body: String)(implicit doc: SemanticDocument) =
     cleanupRules(pkgSymbols, topLevelImportedSymbol)
