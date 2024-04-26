@@ -1,0 +1,16 @@
+# sbt specific
+**/target/
+project/plugins/project/
+
+# VS Code
+.vscode/
+# Metals
+**/.bloop/
+**/.metals/
+**/metals.sbt
+
+# Bloop
+**/.bsp
+
+# scala-cli
+**/.scala-build
